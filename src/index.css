@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* Optional custom global styles */
+body {
+  @apply font-sans bg-white text-gray-800;
+}
+@keyframes fade-in-up {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out;
+  }
+  
+  /* In your CSS file (e.g., index.css or a dedicated CSS module) */
+
+.product-detail-image {
+  /* Set a maximum width and height for the image container */
+  max-width: 400px; /* Adjust as needed, e.g., 500px, 600px */
+  max-height: 400px; /* Adjust as needed */
+  width: 100%; /* Ensures it's responsive within its max-width */
+  height: auto; /* Maintains aspect ratio */
+
+  /* How the image content should fit into the container */
+  object-fit: contain; /* This is crucial! */
+  /*
+    * object-fit options:
+    * - contain: The image is scaled to maintain its aspect ratio while fitting within the element's content box.
+    * - cover: The image is scaled to maintain its aspect ratio while filling the element's entire content box. The image will be clipped if its aspect ratio does not match the aspect ratio of its content box.
+    * - fill: The image is sized to fill the element's content box. The entire image will fill the box, but it will be stretched or squashed to fit.
+    * - scale-down: The image is sized as if `none` or `contain` were selected, whichever would result in a smaller concrete object size.
+    * - none: The image is not resized.
+  */
+
+  /* Optional: Add some padding/margin if needed */
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* For smaller screens, you might want the image to take full width */
+@media (max-width: 768px) {
+  .product-detail-image {
+    max-width: 100%; /* Take full width on smaller screens */
+    max-height: 300px; /* Adjust height for smaller screens */
+  }
+}
