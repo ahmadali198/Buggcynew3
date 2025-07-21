@@ -1,19 +1,21 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react"; // Import useCallback and useMemo
 import { useParams, useNavigate } from "react-router-dom";
 import useSWR from "swr";
 import axios from "axios";
-import { useCartStore } from "../store/cartStore"; // Assuming this path is correct
+import { useCartStore } from "../Store/cartStore"; // Assuming this path is correct
 
-// A reusable fetcher function for SWR
+// A reusable fetcher function for SWR (does not need memoization as it's defined globally)
 const fetcher = (url) => axios.get(url).then((res) => res.data);
 
 const ProductDetailPage = () => {
   const { id } = useParams(); // Get product ID from the URL
-  const navigate = useNavigate(); // For programmatic navigation
-  const { addToCart } = useCartStore(); // Access addToCart from your Zustand store
+  const navigate = useNavigate(); // For programmatic navigation (stable function from React Router)
+  const { addToCart } = useCartStore(); // Access addToCart from your Zustand store (stable function from Zustand)
 
-  // Helper function to render star ratings (copied from ProductCard for consistency)
-  const renderStars = (rating) => {
+  // Memoize the renderStars helper function.
+  // It's a pure function and doesn't depend on any component state or props,
+  // so it can be memoized once.
+  const memoizedRenderStars = useCallback((rating) => {
     const stars = [];
     const fullStars = Math.floor(rating); // Get the integer part for full stars
     const hasHalfStar = rating % 1 >= 0.5; // Check if there's a half star
@@ -50,21 +52,30 @@ const ProductDetailPage = () => {
       );
     }
     return stars;
-  };
+  }, []); // Empty dependency array as it has no external dependencies
 
-  // Fetch product data using SWR
+  // Memoize the onError handler for the image.
+  // This prevents the creation of a new function on every render if it were defined inline.
+  const handleImageError = useCallback((e) => {
+    e.target.onerror = null;
+    e.target.src = `https://placehold.co/400x400/cccccc/333333?text=No+Image`;
+  }, []); // Empty dependency array as it has no external dependencies
+
+  // Fetch product data using SWR. SWR handles its own caching and revalidation.
   const { data: product, error, isLoading } = useSWR(
     `https://fakestoreapi.com/products/${id}`,
     fetcher
   );
 
-  // Handle adding product to cart and navigating
-  const handleAddToCart = () => {
+  // Memoize the handleAddToCart function.
+  // It depends on `product`, `addToCart` (from Zustand, which is stable), and `Maps` (from react-router-dom, which is also stable).
+  // `product` is the only dependency that changes based on SWR's data fetching.
+  const handleAddToCart = useCallback(() => {
     if (product) { // Ensure product data is loaded before adding
-      addToCart(product);
-      navigate("/CartPage"); // Navigate to the cart page (ensure this route exists)
+      addToCart(product); // addToCart is a stable function from Zustand store
+      navigate("/CartPage"); // navigate is a stable function from useNavigate hook
     }
-  };
+  }, [product, addToCart, navigate]); // Dependencies: product (the fetched data), addToCart, navigate
 
   // --- Loading and Error States ---
   if (isLoading) {
@@ -108,7 +119,7 @@ const ProductDetailPage = () => {
             src={product.image}
             alt={product.title}
             className="max-w-full h-96 object-contain mix-blend-multiply dark:mix-blend-normal transform transition-transform duration-300 hover:scale-105"
-            onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x400/cccccc/333333?text=No+Image`; }} // Placeholder for broken images
+            onError={handleImageError} // Use the memoized handler
           />
         </div>
 
@@ -126,7 +137,7 @@ const ProductDetailPage = () => {
           {product.rating && (
             <div className="flex items-center space-x-2 text-base text-gray-700 dark:text-gray-300">
               <div className="flex">
-                {renderStars(product.rating.rate)}
+                {memoizedRenderStars(product.rating.rate)} {/* Use the memoized render function */}
               </div>
               <span>{product.rating.rate}</span>
               <span className="text-gray-500 dark:text-gray-400">({product.rating.count} reviews)</span>
@@ -142,7 +153,7 @@ const ProductDetailPage = () => {
           </p>
 
           <button
-            onClick={handleAddToCart}
+            onClick={handleAddToCart} // Use the memoized handler
             className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-800 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:from-blue-700 hover:to-blue-900 transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
           >
             Add to Cart

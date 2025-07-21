@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react"; // Added useCallback, useMemo
 import {
   getAllProducts,
   deleteProduct,
@@ -23,13 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/Dialog"; // Importing shadcn Dialog components
-
-const categories = [
-  "electronics",
-  "jewelery",
-  "men's clothing",
-  "women's clothing",
-];
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const UserProductsPage = () => {
   const [products, setProducts] = useState([]);
@@ -40,38 +34,50 @@ const UserProductsPage = () => {
   const [showUpdateSuccessPopup, setShowUpdateSuccessPopup] = useState(false); // State for shadcn update success dialog
   const [showDeleteConfirmPopup, setShowDeleteConfirmPopup] = useState(false); // State for shadcn delete confirmation dialog
   const [productToDeleteId, setProductToDeleteId] = useState(null); // Stores the ID of the product to be deleted
-  const [showDeleteSuccessPopup, setShowDeleteSuccessPopup] = useState(false); // State for shadcn delete success dialog
+  const [showDeleteSuccessPopup, setShowDeleteSuccessPopup] = useState(false);
 
+  const navigate = useNavigate(); // Initialize useNavigate
 
-  // --- Fetch Products on Mount ---
+  // Memoize categories for consistency, even if static
+  const categories = useMemo(() => [
+    "electronics",
+    "jewelery",
+    "men's clothing",
+    "women's clothing",
+  ], []); // Empty dependency array means it's created once
+
+  // --- Fetch Products function (memoized with useCallback) ---
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAllProducts();
+      // Ensure prices are parsed when data is fetched
+      const parsedProducts = data.map((p) => ({
+        ...p,
+        price: typeof p.price === 'number' ? p.price : parseFloat(p.price),
+      }));
+      setProducts(parsedProducts);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      setError("Failed to load products. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  }, []); // No dependencies for fetchProducts itself if it only uses static imports and state setters
+
+  // --- Effect to call fetchProducts on Mount ---
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getAllProducts();
-        const parsedProducts = data.map((p) => ({
-          ...p,
-          price: parseFloat(p.price), // Important: parse price to float
-        }));
-        setProducts(parsedProducts);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setError("Failed to load products. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProducts();
-  }, []);
+  }, [fetchProducts]); // `fetchProducts` is now a stable function due to useCallback
 
-  // --- Handlers ---
-  const handleDeleteClick = (id) => {
+  // --- Handlers (all memoized with useCallback) ---
+  const handleDeleteClick = useCallback((id) => {
     setProductToDeleteId(id);
     setShowDeleteConfirmPopup(true); // Open the delete confirmation dialog
-  };
+  }, []); // No dependencies
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     setShowDeleteConfirmPopup(false); // Close the confirmation dialog
     if (!productToDeleteId) return;
 
@@ -79,12 +85,8 @@ const UserProductsPage = () => {
       setLoading(true);
       setError(null);
       await deleteProduct(productToDeleteId);
-      const updated = await getAllProducts();
-      const parsedUpdated = updated.map((p) => ({
-        ...p,
-        price: parseFloat(p.price),
-      }));
-      setProducts(parsedUpdated);
+      // Re-fetch products to ensure UI is up-to-date
+      await fetchProducts(); // Use the memoized fetchProducts
       setShowDeleteSuccessPopup(true); // Show delete success dialog
 
       setTimeout(() => {
@@ -98,27 +100,29 @@ const UserProductsPage = () => {
       setLoading(false);
       setProductToDeleteId(null); // Clear the product ID after deletion attempt
     }
-  };
+  }, [productToDeleteId, fetchProducts, setShowDeleteConfirmPopup, setShowDeleteSuccessPopup, setLoading, setError]); // Dependencies
 
-  const handleEdit = (product) => {
+  const handleEdit = useCallback((product) => {
     setEditingProduct(product.id);
-    setEditedData({ ...product, price: String(product.price || "") });
+    setEditedData({ ...product, price: String(product.price || "") }); // Convert price to string for input value
     setError(null);
-  };
+  }, []); // No dependencies
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setEditedData((prev) => ({ ...prev, [name]: value }));
-  };
+  }, []); // No dependencies
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = useCallback((e) => {
     const file = e.target.files[0];
     setError(null);
     if (!file) {
       // If user cancels file selection, revert to previous image or null
+      // Get the current image from the product being edited
+      const currentProduct = products.find(p => p.id === editingProduct);
       setEditedData((prev) => ({
         ...prev,
-        image: products.find(p => p.id === editingProduct)?.image || null
+        image: currentProduct?.image || null
       }));
       return;
     }
@@ -128,18 +132,20 @@ const UserProductsPage = () => {
 
     if (!validTypes.includes(file.type)) {
       setError("Only JPEG, PNG, or WEBP images are allowed.");
+      const currentProduct = products.find(p => p.id === editingProduct);
       setEditedData((prev) => ({
         ...prev,
-        image: products.find(p => p.id === editingProduct)?.image || null
+        image: currentProduct?.image || null
       })); // Keep existing image or set null
       return;
     }
 
     if (file.size > maxSize) {
       setError("Image size should be under 2MB.");
+      const currentProduct = products.find(p => p.id === editingProduct);
       setEditedData((prev) => ({
         ...prev,
-        image: products.find(p => p.id === editingProduct)?.image || null
+        image: currentProduct?.image || null
       })); // Keep existing image or set null
       return;
     }
@@ -149,9 +155,9 @@ const UserProductsPage = () => {
       setEditedData((prev) => ({ ...prev, image: reader.result })); // Store base64
     };
     reader.readAsDataURL(file);
-  };
+  }, [products, editingProduct, setError, setEditedData]); // Dependencies for `products` and `editingProduct`
 
-  const handleUpdate = async () => {
+  const handleUpdate = useCallback(async () => {
     const { id, title, price, description, category, image } = editedData;
 
     if (!title || !price || !description || !category || !image) {
@@ -172,12 +178,7 @@ const UserProductsPage = () => {
         price: parsedPrice, // Ensure price is a number for the update
       };
       await updateProduct(productToUpdate);
-      const updated = await getAllProducts();
-      const parsedUpdated = updated.map((p) => ({
-        ...p,
-        price: parseFloat(p.price),
-      }));
-      setProducts(parsedUpdated);
+      await fetchProducts(); // Re-fetch all products to get the updated list
       setEditingProduct(null);
       setShowUpdateSuccessPopup(true); // Show shadcn success dialog
 
@@ -192,17 +193,17 @@ const UserProductsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [editedData, fetchProducts, setEditingProduct, setShowUpdateSuccessPopup, setLoading, setError]); // Dependencies
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditingProduct(null);
     setError(null); // Clear errors on cancel
-  };
+  }, []); // No dependencies
 
   return (
     <div className="container mx-auto px-4 py-8 mt-2 font-inter">
       {/* Page Title */}
-      <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-10 text-left flex items-center space-x-3"> {/* Changed to text-left */}
+      <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-10 text-left flex items-center space-x-3">
         <ListFilter size={36} className="text-blue-600 dark:text-blue-400" />
         <span>Your Added Products</span>
       </h2>
@@ -218,7 +219,7 @@ const UserProductsPage = () => {
       {/* Error Message */}
       {error && !loading && (
         <div
-          className="bg-red-100 dark:bg-red-800 border border-red-400 text-red-700 dark:text-red-200 px-4 py-3 rounded relative mb-6 text-left" // Added text-left
+          className="bg-red-100 dark:bg-red-800 border border-red-400 text-red-700 dark:text-red-200 px-4 py-3 rounded relative mb-6 text-left"
           role="alert"
         >
           <strong className="font-bold">Oops!</strong>
@@ -229,10 +230,10 @@ const UserProductsPage = () => {
       {/* No Products Found */}
       {!loading && !error && products.length === 0 && (
         <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-          <p className="text-xl text-gray-500 dark:text-gray-400 mb-4 text-left">You haven't added any products yet.</p> {/* Added text-left */}
-          <p className="text-md text-gray-600 dark:text-gray-300 text-left">Start by adding your first product!</p> {/* Added text-left */}
+          <p className="text-xl text-gray-500 dark:text-gray-400 mb-4 text-left">You haven't added any products yet.</p>
+          <p className="text-md text-gray-600 dark:text-gray-300 text-left">Start by adding your first product!</p>
           <button
-            onClick={() => (window.location.href = "/add-product")}
+            onClick={() => navigate("/add-product")}
             className="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             Add Product Now
@@ -250,7 +251,7 @@ const UserProductsPage = () => {
             >
               {editingProduct === product.id ? (
                 // --- Edit Mode ---
-                <div className="p-5 space-y-4 text-left"> {/* Added text-left */}
+                <div className="p-5 space-y-4 text-left">
                   {/* Image Upload Area for Edit Mode */}
                   <div
                     className="relative w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg
@@ -260,7 +261,7 @@ const UserProductsPage = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleImageUpload}
+                      onChange={handleImageUpload} // Using memoized handler
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                       aria-label="Upload new product image"
                     />
@@ -288,7 +289,7 @@ const UserProductsPage = () => {
                     type="text"
                     name="title"
                     value={editedData.title || ""}
-                    onChange={handleChange}
+                    onChange={handleChange} // Using memoized handler
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
                                bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100
                                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -298,7 +299,7 @@ const UserProductsPage = () => {
                     type="number"
                     name="price"
                     value={editedData.price || ""}
-                    onChange={handleChange}
+                    onChange={handleChange} // Using memoized handler
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
                                bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100
                                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -309,13 +310,13 @@ const UserProductsPage = () => {
                   <select
                     name="category"
                     value={editedData.category || ""}
-                    onChange={handleChange}
+                    onChange={handleChange} // Using memoized handler
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
                                bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none cursor-pointer
                                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Select Category</option>
-                    {categories.map((cat) => (
+                    {categories.map((cat) => ( // categories is memoized
                       <option key={cat} value={cat} className="capitalize">
                         {cat.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                       </option>
@@ -324,7 +325,7 @@ const UserProductsPage = () => {
                   <textarea
                     name="description"
                     value={editedData.description || ""}
-                    onChange={handleChange}
+                    onChange={handleChange} // Using memoized handler
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
                                bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-y
                                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -335,7 +336,7 @@ const UserProductsPage = () => {
                   {/* Action Buttons for Edit Mode */}
                   <div className="flex justify-end space-x-3 mt-4">
                     <button
-                      onClick={handleUpdate}
+                      onClick={handleUpdate} // Using memoized handler
                       className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg shadow-md
                                  hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50
                                  transition-colors text-sm"
@@ -344,7 +345,7 @@ const UserProductsPage = () => {
                       <Save size={18} className="mr-2" /> Save
                     </button>
                     <button
-                      onClick={handleCancelEdit}
+                      onClick={handleCancelEdit} // Using memoized handler
                       className="inline-flex items-center px-4 py-2 bg-gray-500 text-white font-medium rounded-lg shadow-md
                                  hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50
                                  transition-colors text-sm"
@@ -356,7 +357,7 @@ const UserProductsPage = () => {
                 </div>
               ) : (
                 // --- Display Mode ---
-                <div className="p-5 flex flex-col h-full text-left"> {/* Added text-left */}
+                <div className="p-5 flex flex-col h-full text-left">
                   <img
                     src={product.image}
                     alt={product.title}
@@ -381,14 +382,14 @@ const UserProductsPage = () => {
                   </div>
                   <div className="flex justify-between mt-4 space-x-3">
                     <button
-                      onClick={() => handleEdit(product)}
+                      onClick={() => handleEdit(product)} // Using memoized handler
                       className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-yellow-400 rounded-lg text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors text-sm font-medium"
                       title="Edit Product"
                     >
                       <Edit2 size={16} className="mr-2" /> Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteClick(product.id)} // Changed to open shadcn dialog
+                      onClick={() => handleDeleteClick(product.id)} // Using memoized handler
                       className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-red-400 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors text-sm font-medium"
                       title="Delete Product"
                     >
@@ -405,7 +406,7 @@ const UserProductsPage = () => {
       {/* Shadcn Success Dialog for Product Update */}
       <Dialog open={showUpdateSuccessPopup} onOpenChange={setShowUpdateSuccessPopup}>
         <DialogContent className="sm:max-w-[425px] font-inter">
-          <DialogHeader className="text-left"> {/* Changed to text-left */}
+          <DialogHeader className="text-center">
             <CheckCircle size={60} className="text-green-500 mx-auto mb-4 animate-bounce" />
             <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">Product Updated Successfully!</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-300 text-base">
@@ -416,7 +417,7 @@ const UserProductsPage = () => {
             <button
               onClick={() => setShowUpdateSuccessPopup(false)}
               className="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md
-                         hover:bg-blue-700 transition duration-300"
+                          hover:bg-blue-700 transition duration-300"
             >
               Close
             </button>
@@ -427,7 +428,7 @@ const UserProductsPage = () => {
       {/* Shadcn Dialog for Delete Confirmation */}
       <Dialog open={showDeleteConfirmPopup} onOpenChange={setShowDeleteConfirmPopup}>
         <DialogContent className="sm:max-w-[425px] font-inter">
-          <DialogHeader className="text-left"> {/* Changed to text-left */}
+          <DialogHeader className="text-center">
             <AlertCircle size={60} className="text-red-500 mx-auto mb-4" />
             <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">Confirm Deletion</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-300 text-base">
@@ -436,16 +437,16 @@ const UserProductsPage = () => {
           </DialogHeader>
           <div className="flex justify-center space-x-4 mt-4">
             <button
-              onClick={handleDeleteConfirm}
+              onClick={handleDeleteConfirm} // Using memoized handler
               className="bg-red-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md
-                         hover:bg-red-700 transition duration-300"
+                          hover:bg-red-700 transition duration-300"
             >
               Delete
             </button>
             <button
               onClick={() => setShowDeleteConfirmPopup(false)}
               className="bg-gray-300 text-gray-800 font-semibold py-2.5 px-6 rounded-lg shadow-md
-                         hover:bg-gray-400 transition duration-300"
+                          hover:bg-gray-400 transition duration-300"
             >
               Cancel
             </button>
@@ -456,7 +457,7 @@ const UserProductsPage = () => {
       {/* Shadcn Dialog for Delete Success */}
       <Dialog open={showDeleteSuccessPopup} onOpenChange={setShowDeleteSuccessPopup}>
         <DialogContent className="sm:max-w-[425px] font-inter">
-          <DialogHeader className="text-left"> {/* Changed to text-left */}
+          <DialogHeader className="text-center">
             <CheckCircle size={60} className="text-green-500 mx-auto mb-4 animate-bounce" />
             <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">Product Deleted Successfully!</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-300 text-base">
@@ -467,7 +468,7 @@ const UserProductsPage = () => {
             <button
               onClick={() => setShowDeleteSuccessPopup(false)}
               className="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md
-                         hover:bg-blue-700 transition duration-300"
+                          hover:bg-blue-700 transition duration-300"
             >
               Close
             </button>

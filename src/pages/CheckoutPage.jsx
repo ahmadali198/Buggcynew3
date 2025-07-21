@@ -1,255 +1,225 @@
-import React, { useState, useEffect } from "react";
-import { useCartStore } from "../store/cartStore";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useCartStore } from "../Store/cartStore";
 import { useNavigate } from "react-router-dom";
-import Modal from "../components/Modal";
-import {
-  ShoppingCart,
-  MapPin,
-  Mail,
-  User,
-  CreditCard,
-  CheckCircle,
-  ArrowLeft,
-  DollarSign // For total price icon
-} from "lucide-react"; // Importing icons
+import { CheckCircle, ShoppingCart } from 'lucide-react';
+
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/Dialog';
 
 const CheckoutPage = () => {
-  const { cartItems, clearCart } = useCartStore();
-  const [formData, setFormData] = useState({ name: "", address: "", email: "" });
-  const [showPopup, setShowPopup] = useState(false);
-  const [showError, setShowError] = useState(false); // State for form validation error
+  const { cartItems, totalItems, totalPrice, clearCart } = useCartStore();
   const navigate = useNavigate();
 
-  // Calculate total price
-  const totalPrice = cartItems.reduce(
-    (total, item) => total + item.price * (item.quantity || 1),
-    0
-  );
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  // Scroll to top on component mount
+  // --- Calculations using useMemo for accuracy and performance ---
+  const subtotal = useMemo(() => {
+    return typeof totalPrice === 'number' ? totalPrice : 0;
+  }, [totalPrice]);
+
+  const shippingCost = 5.00;
+
+  const finalTotal = useMemo(() => {
+    return subtotal + shippingCost;
+  }, [subtotal, shippingCost]);
+
+  // --- Effect for redirection ---
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (totalItems === 0 && !showSuccessDialog) {
+      navigate('/CartPage');
+    }
+  }, [totalItems, navigate, showSuccessDialog]);
+
+  // --- Callback for placing order ---
+  const handlePlaceOrder = useCallback(async (e) => {
+    e.preventDefault(); // Prevent default form submission
+
+    setIsProcessing(true);
+    // Simulate an API call for placing an order
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // After successful "order placement"
+    clearCart(); // Clear the cart using the Zustand action
+    setIsProcessing(false);
+    setShowSuccessDialog(true);
+
+    // Redirect to home page after a short delay
+    setTimeout(() => {
+      setShowSuccessDialog(false);
+      navigate('/');
+    }, 3000);
+  }, [clearCart, navigate, setShowSuccessDialog]);
+
+  // --- Callback for image error handling ---
+  const handleImageError = useCallback((e) => {
+    e.target.onerror = null; // Prevent infinite loop if placeholder also fails
+    e.target.src = `https://placehold.co/64x64/cccccc/333333?text=No+Image`;
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setShowError(false); // Hide error on input change
-  };
-
-  const handleOrderSubmit = (e) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.address || !formData.email) {
-      setShowError(true); // Show error for missing fields
-      return;
-    }
-
-    if (cartItems.length === 0) {
-      // Using a custom modal/message box instead of alert()
-      // This scenario should ideally be prevented by the early exit, but as a fallback
-      // For a real application, you'd show a user-friendly message here.
-      console.warn("Cart is empty. Cannot place order.");
-      navigate("/");
-      return;
-    }
-
-    // Simulate order processing (e.g., sending data to a backend)
-    console.log("Order submitted:", { formData, items: cartItems });
-
-    clearCart(); // Clear cart after successful submission
-    setShowPopup(true); // Show success modal
-
-    // Automatically close modal and navigate after 3 seconds
-    setTimeout(() => {
-      setShowPopup(false);
-      navigate("/");
-    }, 3000);
-  };
-
-  // --- Early Exit for Empty Cart ---
-  if (cartItems.length === 0 && !showPopup) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4 font-inter"> {/* Ensured font-inter */}
-        <div className="text-center bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-w-md w-full">
-          <ShoppingCart size={60} className="mx-auto text-gray-400 dark:text-gray-500 mb-6" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Your Cart is Empty</h2> {/* Adjusted font size */}
-          <p className="mb-8 text-gray-600 dark:text-gray-300">
-            It looks like you haven't added any products to your cart yet. Browse our amazing selection!
-          </p>
-          <button
-            onClick={() => navigate("/")}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md
-                         transition duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
-          >
-            <ArrowLeft size={20} />
-            <span>Start Shopping</span>
-          </button>
-        </div>
-      </div>
-    );
+  if (totalItems === 0 && !showSuccessDialog) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10 px-4 sm:px-6 lg:px-8 font-inter"> {/* Applied font-inter */}
-      <div className="container mx-auto max-w-5xl"> {/* Adjusted max-width for overall layout */}
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-left flex items-center space-x-3"> {/* Adjusted font size, weight, and text-left */}
-          <CreditCard size={32} className="text-blue-600 dark:text-blue-400" /> {/* Adjusted icon size */}
-          <span>Checkout</span>
-        </h2>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10 px-4 sm:px-6 lg:px-8 font-inter flex justify-center items-start"> {/* Centered content horizontally */}
+      <div className="max-w-6xl w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row gap-8 md:gap-12"> {/* Increased max-w, adjusted padding and gap */}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8"> {/* Adjusted gap */}
-          {/* Shipping Information Section */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 text-left"> {/* Adjusted padding, added text-left */}
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-5 flex items-center space-x-3"> {/* Adjusted font size, margins */}
-              <MapPin size={20} className="text-purple-600 dark:text-purple-400" /> {/* Adjusted icon size */}
-              <span>Shipping Information</span>
-            </h3>
-            <form onSubmit={handleOrderSubmit} className="space-y-4"> {/* Adjusted space-y */}
-              {/* Full Name */}
+        {/* Left Column: Customer Details Form */}
+        <div className="md:w-1/2 w-full space-y-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-3 border-b pb-4 border-gray-100 dark:border-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-blue-600 dark:text-blue-400">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            <span>Customer Details</span>
+          </h2>
+
+          <form className="space-y-5"> {/* Adjusted space-y */}
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-left">Full Name</label>
+              <input type="text" id="fullName" className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="John Doe" required />
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-left">Email Address</label>
+              <input type="email" id="email" className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="john.doe@example.com" required />
+            </div>
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-left">Shipping Address</label>
+              <input type="text" id="address" className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="123 Main St" required />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"> {/* Responsive grid for city/zip */}
               <div>
-                <label htmlFor="name" className="sr-only">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} /> {/* Adjusted icon size */}
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    placeholder="Full Name"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
-                               bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-base
-                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                               transition duration-200" // Adjusted padding, font size
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-left">City</label>
+                <input type="text" id="city" className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="New York" required />
               </div>
-
-              {/* Address */}
               <div>
-                <label htmlFor="address" className="sr-only">Address</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} /> {/* Adjusted icon size */}
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    placeholder="Shipping Address"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
-                               bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-base
-                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                               transition duration-200" // Adjusted padding, font size
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+                <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-left">Zip Code</label>
+                <input type="text" id="zipCode" className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="10001" required />
               </div>
+            </div>
+          </form>
+        </div>
 
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="sr-only">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} /> {/* Adjusted icon size */}
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="Email Address"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
-                               bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-base
-                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                               transition duration-200" // Adjusted padding, font size
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
+        {/* Right Column: Order Summary Section */}
+        <div className="md:w-1/2 w-full space-y-6 text-gray-800 dark:text-gray-200">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-3 border-b pb-4 border-gray-100 dark:border-gray-700">
+            <ShoppingCart size={28} className="text-blue-600 dark:text-blue-400" />
+            <span>Order Summary</span>
+          </h2>
 
-              {showError && (
-                <div className="bg-red-100 dark:bg-red-800 border border-red-400 text-red-700 dark:text-red-200 px-4 py-2 rounded relative text-sm" role="alert"> {/* Adjusted padding */}
-                  <strong className="font-semibold">Heads up!</strong> {/* Adjusted font weight */}
-                  <span className="block sm:inline ml-2">Please fill in all the required fields.</span>
-                </div>
-              )}
+          <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar"> {/* Added max-height and scrollbar for long lists */}
+            {cartItems.map((item) => {
+              const itemPrice = typeof item.price === 'number' ? item.price : 0;
+              const itemQuantity = typeof item.quantity === 'number' ? item.quantity : 0;
+              const itemTotal = itemPrice * itemQuantity;
 
-              <button
-                type="submit"
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md
-                               transition duration-300 transform hover:scale-105 flex items-center justify-center space-x-3 mt-5" // Adjusted margin-top
-              >
-                <CreditCard size={20} /> {/* Adjusted icon size */}
-                <span>Place Order (${totalPrice.toFixed(2)})</span>
-              </button>
-            </form>
-          </div>
-
-          {/* Order Summary Section */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col text-left"> {/* Adjusted padding, added text-left */}
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-5 flex items-center space-x-3"> {/* Adjusted font size, margins */}
-              <ShoppingCart size={20} className="text-indigo-600 dark:text-indigo-400" /> {/* Adjusted icon size */}
-              <span>Order Summary</span>
-            </h3>
-            <ul className="space-y-3 flex-grow overflow-y-auto max-h-80 pr-2"> {/* Adjusted space-y, max-h */}
-              {cartItems.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2 last:border-b-0 last:pb-0" // Adjusted padding
-                >
-                  <div className="flex items-center space-x-3"> {/* Adjusted space-x */}
+              return (
+                <div key={item.id} className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 last:pb-0"> {/* Last item has no bottom border/padding */}
+                  <div className="flex items-center space-x-3 flex-grow min-w-0"> {/* flex-grow and min-w-0 for title truncation */}
                     <img
                       src={item.image}
                       alt={item.title}
-                      className="w-14 h-14 object-contain rounded-md border border-gray-200 dark:border-gray-600" // Adjusted size
-                      onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/56x56/cccccc/333333?text=No+Image`; }} // Placeholder
+                      className="w-14 h-14 object-contain rounded-md flex-shrink-0 border border-gray-200 dark:border-gray-600 p-1"
+                      onError={handleImageError}
                     />
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1">{item.title}</p> {/* Adjusted font size */}
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Qty: {item.quantity}</p> {/* Quantity is now left-aligned */}
+                    <div className="text-left flex-grow min-w-0">
+                      <p className="font-semibold text-gray-900 dark:text-white line-clamp-1">{item.title}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Qty: {itemQuantity}</p>
                     </div>
                   </div>
-                  <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm"> {/* Adjusted font size */}
-                    ${(item.price * (item.quantity || 1)).toFixed(2)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-5 mt-5 flex justify-between items-center text-lg font-bold text-gray-900 dark:text-white"> {/* Decreased font size to text-lg */}
-              <span className="flex items-center space-x-2">
-                  <DollarSign size={20} className="text-green-600 dark:text-green-400" /> {/* Adjusted icon size */}
-                  <span>Total:</span>
-              </span>
-              <span>${totalPrice.toFixed(2)}</span>
+                  <span className="font-bold text-gray-900 dark:text-white text-lg flex-shrink-0">${itemTotal.toFixed(2)}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Custom Scrollbar Style (add this to your global CSS or a style tag if not using a CSS file) */}
+          <style jsx>{`
+            .custom-scrollbar::-webkit-scrollbar {
+              width: 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+              background: #f1f1f1;
+              border-radius: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: #888;
+              border-radius: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #555;
+            }
+            .dark .custom-scrollbar::-webkit-scrollbar-track {
+              background: #374151; /* dark gray-700 */
+            }
+            .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: #6b7280; /* dark gray-500 */
+            }
+            .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #9ca3af; /* dark gray-400 */
+            }
+          `}</style>
+
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-5 mt-6 space-y-4"> {/* Adjusted padding and space-y */}
+            <div className="flex justify-between text-lg text-gray-700 dark:text-gray-300">
+              <span>Subtotal:</span>
+              <span className="font-semibold">${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-lg text-gray-700 dark:text-gray-300">
+              <span>Shipping:</span>
+              <span className="font-semibold">${shippingCost.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-2xl font-bold text-gray-900 dark:text-white pt-3 border-t border-gray-200 dark:border-gray-700">
+              <span>Total:</span>
+              <span>${finalTotal.toFixed(2)}</span>
             </div>
           </div>
-        </div>
 
-        {/* 🎉 Success Modal */}
-        <Modal isOpen={showPopup} onClose={() => setShowPopup(false)}>
-          <div className="text-center p-6 font-inter"> {/* Applied font-inter */}
-            <CheckCircle size={70} className="text-green-500 mx-auto mb-5 animate-bounce" /> {/* Adjusted icon size, margin */}
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Order Placed Successfully!</h3> {/* Adjusted font size */}
-            <p className="text-base text-gray-600 dark:text-gray-300 mb-6"> {/* Adjusted font size */}
-              Thank you for your order. We've received it and will start processing soon!
-            </p>
+          <button
+            onClick={handlePlaceOrder}
+            className="w-full bg-gradient-to-r from-green-600 to-green-800 text-white font-semibold py-3.5 px-8 rounded-full shadow-lg hover:from-green-700 hover:to-green-900 transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 flex items-center justify-center space-x-2 mt-8 text-lg"
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Processing...</span>
+              </>
+            ) : (
+              <span>Place Order</span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-[425px] font-inter">
+          <DialogHeader className="text-center">
+            <CheckCircle size={60} className="text-green-500 mx-auto mb-4 animate-bounce" />
+            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">Order Placed Successfully!</DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-300 text-base">
+              Thank you for your purchase. You will be redirected to the home page shortly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center mt-4">
             <button
               onClick={() => {
-                setShowPopup(false);
+                setShowSuccessDialog(false);
                 navigate("/");
               }}
               className="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md
-                         hover:bg-blue-700 transition duration-300"
+                          hover:bg-blue-700 transition duration-300"
             >
-              Close & Return Home
+              Continue Shopping
             </button>
           </div>
-        </Modal>
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default CheckoutPage;
+export default React.memo(CheckoutPage);

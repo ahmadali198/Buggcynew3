@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useCartStore } from "../store/cartStore";
+import { useCartStore } from "../Store/cartStore";
 import { Menu, ShoppingCart } from "lucide-react";
 
 const CloseIcon = ({ size = 32, color = "#FFFFFF", className = '', onClick }) => (
@@ -58,9 +58,7 @@ const Navbar = () => {
   // Consolidate navLinks for both desktop and mobile
   const navLinks = [
     { label: "Home", path: "/" },
-    { label: "Add Product", path: "/add-product" },
-    { label: "My Products", path: "/user-products" },
-    { label: "Cart", path: "/checkout", isCart: true }, // Ensure this path is correct for your cart page
+    { label: "Cart", path: "/CartPage", isCart: true },
   ];
 
   const toggleMobileMenu = () => setMobileOpen(!mobileOpen);
@@ -110,53 +108,53 @@ const Navbar = () => {
           className="md:hidden text-gray-700 dark:text-gray-200 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
           aria-label="Open menu"
         >
-          <Menu size={28} /> {/* Always show Menu icon to open this modal */}
+          <Menu size={28} />
         </button>
       </div>
 
       {/* Full-Screen Blue Overlay with Central Modal (conditionally rendered and hidden on desktop) */}
       {mobileOpen && (
         <div
-          className={`fixed inset-0 z-[998] flex flex-col items-center justify-start bg-blue-800 p-4 transition-opacity duration-300 md:hidden ${ // md:hidden to hide on desktop
+          className={`fixed inset-0 z-[998] flex flex-col items-center justify-start bg-blue-800 p-4 transition-opacity duration-300 md:hidden ${
             mobileOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
           }`}
-          // Clicking the blue background area directly also closes the modal
           onClick={toggleMobileMenu}
         >
-          {/* Top Header of the Blue Overlay (contains 'Menu' and 'X' button) */}
+          {/* Top Header of the Blue Overlay (contains 'MyStore' logo and 'X' button) */}
           <div className="w-full max-w-sm md:max-w-md flex justify-between items-center px-4 py-3">
-            <span className="text-2xl font-extrabold text-white">Menu</span>
+            {/* Mobile View: Brand Logo/Title */}
+            <Link to="/" className="flex items-center space-x-2 text-2xl font-bold text-white transition-colors hover:text-blue-200" onClick={toggleMobileMenu}>
+              <span role="img" aria-label="shopping bags">🛍️</span>
+              <span>MyStore</span>
+            </Link>
             <button
               onClick={toggleMobileMenu}
               className="text-white p-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
               aria-label="Close menu"
             >
-              <CloseIcon size={32} color="#FFFFFF" /> {/* White X on blue background */}
+              <CloseIcon size={32} color="#FFFFFF" />
             </button>
           </div>
 
-          {/* Central White Modal/Links Container - UI IMPROVEMENTS HERE */}
+          {/* Central White Modal/Links Container */}
           <div
             className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 flex flex-col items-center flex-grow mx-auto my-auto max-w-sm md:max-w-md w-full border border-gray-200 dark:border-gray-700 transform scale-95 opacity-0 animate-fadeInUp"
-            // Delay rendering until `mobileOpen` is true for animation, then apply transition for fade-in/scale-up
-            // The `transform scale-95 opacity-0` combined with `animate-fadeInUp` will give it a nice pop-in effect
             style={mobileOpen ? { animation: 'fadeInUp 0.3s ease-out forwards', opacity: 1, transform: 'scale(1)' } : {}}
-            // Prevent clicks inside the modal from closing the modal
             onClick={(e) => e.stopPropagation()}
           >
             {/* Links Section */}
             <ul className="flex flex-col space-y-5 w-full text-center">
-              {navLinks.map(({ label, path, isCart }) => ( // Using the full navLinks for modal
+              {navLinks.map(({ label, path, isCart }) => (
                 <li key={path}>
                   <Link
                     to={path}
-                    onClick={toggleMobileMenu} // Close modal when a link is clicked
-                    className={`flex items-center justify-center py-3 text-xl font-medium group rounded-lg
-                                  ${location.pathname === path
-                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-semibold" // Active link style
-                                    : "text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400" // Inactive link style
-                                  }
-                                  transition-all duration-200 ease-in-out`}
+                    onClick={toggleMobileMenu}
+                    className={`flex items-center justify-center py-3 text-xl font-medium rounded-lg
+                                 ${location.pathname === path
+                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-semibold"
+                                  : "text-gray-800 dark:text-gray-100" // Removed hover effects
+                                }
+                                transition-all duration-200 ease-in-out`}
                   >
                     {isCart && <ShoppingCart size={24} className="mr-3" />}
                     {label}
@@ -169,12 +167,9 @@ const Navbar = () => {
                 </li>
               ))}
             </ul>
-
-            
           </div>
         </div>
       )}
-      {/* Add a simple keyframe for the pop-in animation directly in your CSS or as a style tag */}
       <style>{`
         @keyframes fadeInUp {
           from {

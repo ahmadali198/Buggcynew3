@@ -38,7 +38,6 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setIsOpen(false);
         // Reset searchTerm to the currently selected category when closing dropdown
-        // This ensures the input displays the selected category when the dropdown is closed.
         setSearchTerm(formatCategoryName(selectedCategory));
       }
     };
@@ -46,12 +45,10 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [selectedCategory, formatCategoryName]); // Removed searchTerm from dependencies to avoid re-running on every type
+  }, [selectedCategory, formatCategoryName]);
 
   // Effect to instantly select category if search term exactly matches a category
-  // This effect also handles clearing the selection if the search term becomes empty.
   useEffect(() => {
-    // Only trigger selection if the component has completed its initial category load
     if (!initialLoadComplete) return;
 
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
@@ -61,22 +58,20 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
       onSelect(matchedCategory);
       setIsOpen(false);
     } else if (searchTerm === '' && selectedCategory !== '') {
+      // This handles clearing the selection if the search term becomes empty
       onSelect('');
     }
   }, [searchTerm, categories, onSelect, formatCategoryName, selectedCategory, initialLoadComplete]);
 
 
   // Filter categories based on search term.
-  // This logic ensures all categories are shown when the search bar is focused
-  // or when the search term is empty.
   const filteredCategories = useMemo(() => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    // If the dropdown is open OR the search term is empty, show all categories.
-    // This addresses the issue of not seeing all categories after a selection.
+    // Show all categories if dropdown is open and search term is empty,
+    // or if the search term is not empty but matches a category.
     if (isOpen && lowerCaseSearchTerm === '') {
       return categories;
     }
-    // Otherwise, filter based on the search term.
     return categories.filter(cat =>
       formatCategoryName(cat).toLowerCase().includes(lowerCaseSearchTerm)
     );
@@ -85,7 +80,7 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
   // Handles selecting an option from the dropdown
   const handleSelectOption = (category) => {
     onSelect(category);
-    setSearchTerm(formatCategoryName(category));
+    setSearchTerm(formatCategoryName(category)); // Update searchTerm to show selected category
     setIsOpen(false);
   };
 
@@ -96,13 +91,11 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
   };
 
   // Handles input field focus.
-  // When focused, set the search term to the currently selected category
-  // to allow immediate editing or seeing the current selection.
   const handleInputFocus = () => {
     setIsOpen(true);
     // When focused, the input should reflect the currently selected category,
-    // not necessarily be empty for a new search.
-    setSearchTerm(formatCategoryName(selectedCategory));
+    // allowing the user to see or modify it.
+    setSearchTerm(''); // MODIFIED: Clear searchTerm on focus to show all categories initially
   };
 
 
@@ -165,7 +158,6 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
                   All Products
                 </li>
 
-                {/* Always show all categories when dropdown is open and search term is empty */}
                 {filteredCategories.length > 0 ? (
                   filteredCategories.map((cat) => (
                     <li
@@ -191,4 +183,4 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
   );
 };
 
-export default CategoryFilter;
+export default React.memo(CategoryFilter); // Memoized for performance

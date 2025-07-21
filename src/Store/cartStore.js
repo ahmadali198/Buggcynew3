@@ -7,16 +7,35 @@ export const useCartStore = create(
     persist( // Persists the store state to localStorage
       (set, get) => ({
         cartItems: [],
-        totalItems: 0, // New state to track total number of items (sum of quantities)
+        totalItems: 0,
+        totalPrice: 0, // <--- ADDED: Initialize totalPrice here
 
-        addToCart: (product) =>
+        // Helper function to calculate total price and total items
+        // This makes the update logic DRY (Don't Repeat Yourself)
+        _updateTotals: () => {
+          const currentCartItems = get().cartItems;
+          let newTotalItems = 0;
+          let newTotalPrice = 0;
+
+          currentCartItems.forEach(item => {
+            // Defensive checks for price and quantity
+            const price = typeof item.price === 'number' ? item.price : 0;
+            const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
+
+            newTotalItems += quantity;
+            newTotalPrice += (price * quantity);
+          });
+
+          set({ totalItems: newTotalItems, totalPrice: newTotalPrice });
+        },
+
+        addToCart: (product) => {
           set((state) => {
             const existingItemIndex = state.cartItems.findIndex(
               (item) => item.id === product.id
             );
 
             let updatedCartItems;
-            let newTotalItems = state.totalItems + 1;
 
             if (existingItemIndex > -1) {
               // Item exists, increment quantity
@@ -30,26 +49,22 @@ export const useCartStore = create(
               updatedCartItems = [...state.cartItems, { ...product, quantity: 1 }];
             }
 
-            return {
-              cartItems: updatedCartItems,
-              totalItems: newTotalItems,
-            };
-          }),
+            // Return the updated cartItems. Totals will be updated by _updateTotals after set.
+            return { cartItems: updatedCartItems };
+          });
+          get()._updateTotals(); // <--- CALL: Update totals after cartItems change
+        },
 
-        removeFromCart: (id) =>
+        removeFromCart: (id) => {
           set((state) => {
-            const itemToRemove = state.cartItems.find((item) => item.id === id);
-            if (!itemToRemove) return state; // Should not happen, but a safeguard
-
             const updatedCartItems = state.cartItems.filter((item) => item.id !== id);
-            return {
-              cartItems: updatedCartItems,
-              totalItems: state.totalItems - itemToRemove.quantity, // Subtract the full quantity of the removed item
-            };
-          }),
+            // Return the updated cartItems. Totals will be updated by _updateTotals after set.
+            return { cartItems: updatedCartItems };
+          });
+          get()._updateTotals(); // <--- CALL: Update totals after cartItems change
+        },
 
-        // New action: Decrease quantity of an item
-        decreaseQuantity: (id) =>
+        decreaseQuantity: (id) => {
           set((state) => {
             const existingItemIndex = state.cartItems.findIndex(
               (item) => item.id === id
@@ -58,43 +73,40 @@ export const useCartStore = create(
             if (existingItemIndex === -1) return state; // Item not found
 
             const itemToUpdate = state.cartItems[existingItemIndex];
+            let updatedCartItems;
 
             if (itemToUpdate.quantity > 1) {
               // Decrease quantity if greater than 1
-              const updatedCartItems = state.cartItems.map((item, index) =>
+              updatedCartItems = state.cartItems.map((item, index) =>
                 index === existingItemIndex
                   ? { ...item, quantity: item.quantity - 1 }
                   : item
               );
-              return {
-                cartItems: updatedCartItems,
-                totalItems: state.totalItems - 1,
-              };
             } else {
               // If quantity is 1, remove the item from the cart
-              const updatedCartItems = state.cartItems.filter((item) => item.id !== id);
-              return {
-                cartItems: updatedCartItems,
-                totalItems: state.totalItems - 1,
-              };
+              updatedCartItems = state.cartItems.filter((item) => item.id !== id);
             }
-          }),
 
-        // Existing updateQuantity (can be used for direct quantity setting if needed, but increase/decrease are more common)
-        updateQuantity: (id, quantity) =>
+            // Return the updated cartItems. Totals will be updated by _updateTotals after set.
+            return { cartItems: updatedCartItems };
+          });
+          get()._updateTotals(); // <--- CALL: Update totals after cartItems change
+        },
+
+        updateQuantity: (id, quantity) => {
           set((state) => {
-            const oldQuantity = state.cartItems.find(item => item.id === id)?.quantity || 0;
-            const quantityDifference = quantity - oldQuantity;
+            const updatedCartItems = state.cartItems.map((item) =>
+              item.id === id ? { ...item, quantity } : item
+            );
+            // Return the updated cartItems. Totals will be updated by _updateTotals after set.
+            return { cartItems: updatedCartItems };
+          });
+          get()._updateTotals(); // <--- CALL: Update totals after cartItems change
+        },
 
-            return {
-              cartItems: state.cartItems.map((item) =>
-                item.id === id ? { ...item, quantity } : item
-              ),
-              totalItems: state.totalItems + quantityDifference,
-            };
-          }),
-
-        clearCart: () => set({ cartItems: [], totalItems: 0 }),
+        clearCart: () => {
+          set({ cartItems: [], totalItems: 0, totalPrice: 0 }); // <--- RESET: Reset totalPrice too
+        },
       }),
       {
         name: "cart-storage", // Name for the localStorage key
