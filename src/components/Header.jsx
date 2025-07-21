@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import DarkToggle from "./DarkToggle";
-import { useCartStore } from "../store/cartStore";
+import { useCartStore } from "../Store/cartStore";
 
 const Header = () => {
   const cartItems = useCartStore((state) => state.cartItems);

@@ -1,5 +1,5 @@
 import React from "react";
-import { useCartStore } from "../store/cartStore";
+import { useCartStore } from "../Store/cartStore";
 
 const Cart = () => {
   const { cartItems, removeFromCart } = useCartStore();
