@@ -1,9 +1,15 @@
 @import "tailwindcss";
 
 /* Optional custom global styles */
-body {
+/* In your index.css or global stylesheet */
+html, body, #root {
+  background-color: #ffffff; /* Or white */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   @apply font-sans bg-white text-gray-800;
 }
+
 @keyframes fade-in-up {
     0% {
       opacity: 0;
