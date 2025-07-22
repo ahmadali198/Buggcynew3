@@ -11,7 +11,7 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
 
   // Function to format category names for display, memoized for stability
   const formatCategoryName = useCallback((cat) => {
-    if (!cat) return '';
+    if (!cat) return ''; // Handles empty string for "All Products"
     return cat.replace(/-/g, ' ').charAt(0).toUpperCase() + cat.replace(/-/g, ' ').slice(1);
   }, []);
 
@@ -32,12 +32,19 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
     loadCategories();
   }, []);
 
+  // Effect to set initial searchTerm to reflect selectedCategory
+  // and update searchTerm when selectedCategory changes externally.
+  useEffect(() => {
+    setSearchTerm(formatCategoryName(selectedCategory));
+  }, [selectedCategory, formatCategoryName]);
+
+
   // Effect to close dropdown when clicking outside the component
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setIsOpen(false);
-        // Reset searchTerm to the currently selected category when closing dropdown
+        // When closing, reset searchTerm to display the currently selected category
         setSearchTerm(formatCategoryName(selectedCategory));
       }
     };
@@ -47,30 +54,14 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
     };
   }, [selectedCategory, formatCategoryName]);
 
-  // Effect to instantly select category if search term exactly matches a category
-  useEffect(() => {
-    if (!initialLoadComplete) return;
-
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const matchedCategory = categories.find(cat => formatCategoryName(cat).toLowerCase() === lowerCaseSearchTerm);
-
-    if (matchedCategory && selectedCategory !== matchedCategory) {
-      onSelect(matchedCategory);
-      setIsOpen(false);
-    } else if (searchTerm === '' && selectedCategory !== '') {
-      // This handles clearing the selection if the search term becomes empty
-      onSelect('');
-    }
-  }, [searchTerm, categories, onSelect, formatCategoryName, selectedCategory, initialLoadComplete]);
-
+  // Removed the useEffect that instantly selects category based on searchTerm match.
+  // This behavior will now be driven only by explicit selection via handleSelectOption.
 
   // Filter categories based on search term.
   const filteredCategories = useMemo(() => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    // Show all categories if dropdown is open and search term is empty,
-    // or if the search term is not empty but matches a category.
     if (isOpen && lowerCaseSearchTerm === '') {
-      return categories;
+      return categories; // Show all available categories if input is empty and dropdown is open
     }
     return categories.filter(cat =>
       formatCategoryName(cat).toLowerCase().includes(lowerCaseSearchTerm)
@@ -79,29 +70,38 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
 
   // Handles selecting an option from the dropdown
   const handleSelectOption = (category) => {
-    onSelect(category);
+    onSelect(category); // Notify parent component of the selection
     setSearchTerm(formatCategoryName(category)); // Update searchTerm to show selected category
-    setIsOpen(false);
+    setIsOpen(false); // Close the dropdown
   };
 
   // Handles changes in the input field (user typing)
   const handleInputChange = (e) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value);
     setIsOpen(true); // Always open dropdown when typing
+
+    // If the input is cleared, consider it as trying to select 'All Products'
+    // but only if the input has been interacted with.
+    if (value === '' && selectedCategory !== '') {
+        // We'll let the user explicitly click 'All Products' from the list
+        // rather than auto-selecting it just by clearing the search term.
+        // This makes the behavior more predictable.
+    }
   };
 
   // Handles input field focus.
   const handleInputFocus = () => {
     setIsOpen(true);
-    // When focused, the input should reflect the currently selected category,
-    // allowing the user to see or modify it.
-    setSearchTerm(''); // MODIFIED: Clear searchTerm on focus to show all categories initially
+    // When focused, clear the searchTerm to show all options initially
+    // or let the user type to search.
+    setSearchTerm('');
   };
 
 
   return (
     <div
-      className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md w-full max-w-lg mx-auto relative"
+      className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md w-full max-w-lg relative"
       ref={wrapperRef}
     >
       <label
@@ -111,7 +111,6 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
         Filter by Category:
       </label>
 
-      {/* Only show error if initial load failed and it's not loading */}
       {initialLoadComplete && error ? (
         <div className="text-red-500 dark:text-red-400">
           {error}
@@ -121,9 +120,8 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
           <input
             type="text"
             id="category-search"
+            // Display the selected category when dropdown is closed, or searchTerm when open.
             placeholder={selectedCategory ? formatCategoryName(selectedCategory) : "Select or search category..."}
-            // Display searchTerm when the dropdown is open (for active typing/filtering),
-            // otherwise display the formatted selectedCategory.
             value={isOpen ? searchTerm : formatCategoryName(selectedCategory)}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
@@ -131,7 +129,8 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
                        bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600
                        rounded-lg shadow-sm
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                       transition-all duration-200 cursor-pointer"
+                       transition-all duration-200 cursor-pointer
+                       appearance-none pr-8"
             autoComplete="off"
           />
 
@@ -152,8 +151,8 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
               <ul className="py-1">
                 <li
                   key="all-products"
-                  onClick={() => handleSelectOption('')}
-                  className={`px-4 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-600 text-gray-800 dark:text-gray-200 ${selectedCategory === '' ? 'bg-blue-50 dark:bg-blue-700 font-semibold' : ''}`}
+                  onClick={() => handleSelectOption('')} // Explicitly select 'All Products' by passing empty string
+                  className={`px-4 py-2 cursor-pointer text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 ${selectedCategory === '' ? 'bg-blue-50 dark:bg-blue-700 font-semibold' : ''}`}
                 >
                   All Products
                 </li>
@@ -163,8 +162,9 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
                     <li
                       key={cat}
                       onClick={() => handleSelectOption(cat)}
-                      className={`px-4 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-600 capitalize text-gray-800 dark:text-gray-200
-                                  ${selectedCategory === cat ? 'bg-blue-50 dark:bg-blue-700 font-semibold' : ''}`}
+                      className={`px-4 py-2 cursor-pointer capitalize text-gray-800 dark:text-gray-200
+                                 hover:bg-gray-100 dark:hover:bg-gray-600
+                                 ${selectedCategory === cat ? 'bg-blue-50 dark:bg-blue-700 font-semibold' : ''}`}
                     >
                       {formatCategoryName(cat)}
                     </li>
@@ -183,4 +183,4 @@ const CategoryFilter = ({ onSelect, selectedCategory }) => {
   );
 };
 
-export default React.memo(CategoryFilter); // Memoized for performance
+export default React.memo(CategoryFilter);

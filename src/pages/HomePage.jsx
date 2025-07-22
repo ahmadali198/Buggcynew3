@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getAllProducts, deleteProduct, updateProduct, createProduct as addLocalProduct } from '../services/productService';
 import { fetchProducts as fetchFakeStoreProducts } from '../services/fakeStoreService';
 import ProductList from '../components/ProductList';
-import CategoryFilter from '../components/CategoryFilter'; // Assuming this component exists
+import CategoryFilter from '../components/CategoryFilter';
 import Carousel from '../components/Carousel';
 import { useCartStore } from '../Store/cartStore';
 
@@ -20,8 +20,6 @@ import {
     DialogFooter
 } from "../components/Dialog";
 
-// Define categories to ensure 'All Products' option is implicitly handled
-// The CategoryFilter component should receive this list and include an 'All' option internally.
 const categories = [
     "electronics",
     "jewelery",
@@ -30,7 +28,7 @@ const categories = [
 ];
 
 const HomePage = () => {
-    const [category, setCategory] = useState(''); // Empty string means 'All Products'
+    const [category, setCategory] = useState('');
     const [allProductsData, setAllProductsData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -132,10 +130,9 @@ const HomePage = () => {
         fetchAllInitialProducts();
     }, [refreshTrigger, fetchAllInitialProducts]);
 
-    // This useMemo correctly handles the filtering, including 'All Products'
     const filteredProducts = useMemo(() => {
         if (!category) {
-            return allProductsData; // If no category is selected, show all products
+            return allProductsData;
         }
         return allProductsData.filter(
             product => product.category && product.category.toLowerCase() === category.toLowerCase()
@@ -143,7 +140,7 @@ const HomePage = () => {
     }, [category, allProductsData]);
 
     const handleCategoryChange = useCallback((selectedCategory) => {
-        setCategory(selectedCategory); // This sets the category (or empty string for 'All')
+        setCategory(selectedCategory);
     }, []);
 
     const handleEditProduct = useCallback((product) => {
@@ -167,28 +164,18 @@ const HomePage = () => {
         if (!file) {
             setEditedData((prev) => ({
                 ...prev,
-                image: allProductsData.find(p => p.id === editingProduct)?.image || null
+                image: allProductsData.find(p => p.id === editingProduct)?.image || ''
             }));
             return;
         }
 
         const validTypes = ["image/jpeg", "image/png", "image/webp"];
-        const maxSize = 2 * 1024 * 1024;
 
         if (!validTypes.includes(file.type)) {
             setError("Only JPEG, PNG, or WEBP images are allowed.");
             setEditedData((prev) => ({
                 ...prev,
-                image: allProductsData.find(p => p.id === editingProduct)?.image || null
-            }));
-            return;
-        }
-
-        if (file.size > maxSize) {
-            setError("Image size should be under 2MB.");
-            setEditedData((prev) => ({
-                ...prev,
-                image: allProductsData.find(p => p.id === editingProduct)?.image || null
+                image: '',
             }));
             return;
         }
@@ -326,21 +313,18 @@ const HomePage = () => {
         }
 
         const validTypes = ["image/jpeg", "image/png", "image/webp"];
-        const maxSize = 2 * 1024 * 1024;
 
         if (!validTypes.includes(file.type)) {
             setNewProductData(prev => ({ ...prev, error: "Only JPEG, PNG, or WEBP images are allowed.", image: '' }));
             return;
         }
 
-        if (file.size > maxSize) {
-            setNewProductData(prev => ({ ...prev, error: "Image size should be under 2MB.", image: '' }));
-            return;
-        }
-
         const reader = new FileReader();
         reader.onloadend = () => {
             setNewProductData(prev => ({ ...prev, image: reader.result }));
+        };
+        reader.onerror = () => {
+            setNewProductData(prev => ({ ...prev, error: "Failed to read image file.", image: '' }));
         };
         reader.readAsDataURL(file);
     }, []);
@@ -351,7 +335,7 @@ const HomePage = () => {
         const { title, price, description, category, image } = newProductData;
 
         if (!title || price === undefined || price === null || price === "" || !description || !category || !image) {
-            setNewProductData(prev => ({ ...prev, error: "All fields are required." }));
+            setNewProductData(prev => ({ ...prev, error: "All fields, including image, are required." }));
             return;
         }
 
@@ -399,6 +383,7 @@ const HomePage = () => {
                     {formError}
                 </div>
             )}
+            {/* The heading for Add New Product is now handled by HomePage directly for consistency */}
             <div>
                 <label htmlFor="new-title" className="block text-sm font-medium text-gray-700">Title</label>
                 <input
@@ -407,7 +392,7 @@ const HomePage = () => {
                     name="title"
                     value={data.title}
                     onChange={onChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" // Added shadow-sm
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                 />
             </div>
@@ -421,7 +406,7 @@ const HomePage = () => {
                     onChange={onChange}
                     step="0.01"
                     min="0"
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" // Added shadow-sm
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                 />
             </div>
@@ -433,7 +418,7 @@ const HomePage = () => {
                     value={data.description}
                     onChange={onChange}
                     rows="3"
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" // Added shadow-sm
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                 ></textarea>
             </div>
@@ -444,7 +429,7 @@ const HomePage = () => {
                     name="category"
                     value={data.category}
                     onChange={onChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" // Added shadow-sm
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                 >
                     <option value="">Select a category</option>
@@ -464,27 +449,27 @@ const HomePage = () => {
                     accept="image/jpeg,image/png,image/webp"
                     onChange={onImageUpload}
                     className="mt-1 block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4
-                             file:rounded-md file:border-0 file:text-sm file:font-semibold
-                             file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    required
+                                 file:rounded-md file:border-0 file:text-sm file:font-semibold
+                                 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 {data.image && (
                     <div className="mt-2">
-                        <img src={data.image} alt="Product Preview" className="h-24 w-24 object-contain rounded-md border border-gray-200 shadow-sm" /> {/* Added shadow-sm */}
+                        <img src={data.image} alt="Product Preview" className="h-24 w-24 object-contain rounded-md border border-gray-200 shadow-sm" />
                     </div>
                 )}
+                {!data.image && <p className="text-red-500 text-sm mt-1">Please select an image file.</p>}
             </div>
             <DialogFooter className="flex justify-end space-x-4 pt-4">
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="bg-white text-gray-800 font-semibold py-2.5 px-6 rounded-lg shadow-md transition duration-300 hover:bg-gray-100" // Changed shadow-none to shadow-md
+                    className="bg-white text-gray-800 font-semibold py-2.5 px-6 rounded-lg shadow-md transition duration-300 hover:bg-gray-100"
                 >
                     Cancel
                 </button>
                 <button
                     type="submit"
-                    className="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:bg-blue-700 transition duration-300" // Changed shadow-none to shadow-md
+                    className="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
                 >
                     Add Product
                 </button>
@@ -513,24 +498,26 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 py-6 space-y-10 font-inter">
             <Carousel />
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <CategoryFilter
-                    onSelect={handleCategoryChange}
-                    selectedCategory={category}
-                    categories={categories} // Pass categories to CategoryFilter to help it render 'All'
-                />
-                <button
-                    onClick={handleAddProductClick}
-                    className="bg-blue-600 text-white font-semibold py-2.5 px-2 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 flex items-center space-x-2 w-full sm:w-auto justify-center" // Changed shadow-none to shadow-md
-                >
-                    <PlusCircle size={20} />
-                    <span>Add New Product</span>
-                </button>
-            </div>
+            <div className="flex flex-col items-start sm:flex-row sm:items-center sm:justify-end gap-4 mb-6 w-full"> {/* MODIFIED HERE */}
+    <CategoryFilter
+        onSelect={handleCategoryChange}
+        selectedCategory={category}
+        categories={categories}
+    />
+    <button
+        onClick={handleAddProductClick}
+        // MODIFIED: Added ml-auto for left margin and push to right on sm+ screens
+        className="bg-blue-600 text-white font-semibold py-2.5 px-9 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 flex items-center space-x-2 w-full sm:w-auto justify-center sm:ml-auto"
+    >
+        <PlusCircle size={20} />
+        <span>Add New Product</span>
+    </button>
+</div>
 
             {isMobileView && showInlineAddForm && (
-                <div id="add-product-form" className="bg-white p-6 rounded-lg mb-8 mx-auto max-w-[500px] shadow-lg"> {/* Changed shadow-none to shadow-lg for the form container */}
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Add New Product</h2>
+                <div id="add-product-form" className="bg-white p-6 rounded-lg mb-8 mx-auto max-w-[500px] shadow-lg">
+                    {/* MODIFIED: Added text-right to this heading for mobile */}
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4 text-right">Add New Product</h2>
                     <AddProductForm
                         data={newProductData}
                         onChange={handleNewProductChange}
@@ -573,7 +560,7 @@ const HomePage = () => {
 
             {/* Shadcn Success Dialog for Product Update */}
             <Dialog open={showUpdateSuccessPopup} onOpenChange={setShowUpdateSuccessPopup}>
-                <DialogContent className="sm:max-w-[425px] font-inter max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg"> {/* Changed shadow-none to shadow-lg */}
+                <DialogContent className="sm:max-w-[425px] font-inter max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg">
                     <DialogHeader className="text-center">
                         <CheckCircle size={60} className="text-green-500 mx-auto mb-4 animate-bounce" />
                         <DialogTitle className="text-2xl font-bold text-gray-900">Product Updated Successfully!</DialogTitle>
@@ -586,7 +573,7 @@ const HomePage = () => {
 
             {/* Shadcn Dialog for Delete Confirmation */}
             <Dialog open={showDeleteConfirmPopup} onOpenChange={setShowDeleteConfirmPopup}>
-                <DialogContent className="sm:max-w-[425px] font-inter max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg"> {/* Changed shadow-none to shadow-lg */}
+                <DialogContent className="sm:max-w-[425px] font-inter max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg">
                     <DialogHeader className="text-center">
                         <AlertCircle size={60} className="text-red-500 mx-auto mb-4" />
                         <DialogTitle className="text-2xl font-bold text-gray-900">Confirm Deletion</DialogTitle>
@@ -597,13 +584,13 @@ const HomePage = () => {
                     <div className="flex justify-center gap-4 mt-6">
                         <button
                             onClick={() => setShowDeleteConfirmPopup(false)}
-                            className="bg-white text-gray-800 px-6 py-2 rounded-lg shadow-md hover:bg-gray-100 transition duration-300" // Changed shadow-none to shadow-md
+                            className="bg-white text-gray-800 px-6 py-2 rounded-lg shadow-md hover:bg-gray-100 transition duration-300"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleDeleteConfirm}
-                            className="bg-red-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-700 transition duration-300" // Changed shadow-none to shadow-md
+                            className="bg-red-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-700 transition duration-300"
                         >
                             Delete
                         </button>
@@ -613,7 +600,7 @@ const HomePage = () => {
 
             {/* Shadcn Dialog for Delete Success */}
             <Dialog open={showDeleteSuccessPopup} onOpenChange={setShowDeleteSuccessPopup}>
-                <DialogContent className="sm:max-w-[425px] font-inter max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg"> {/* Changed shadow-none to shadow-lg */}
+                <DialogContent className="sm:max-w-[425px] font-inter max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg">
                     <DialogHeader className="text-center">
                         <CheckCircle size={60} className="text-green-500 mx-auto mb-4 animate-bounce" />
                         <DialogTitle className="text-2xl font-bold text-gray-900">Product Deleted Successfully!</DialogTitle>
@@ -627,9 +614,10 @@ const HomePage = () => {
             {/* Shadcn Dialog for Adding New Product (Desktop only) */}
             {!isMobileView && (
                 <Dialog open={showAddProductPopup} onOpenChange={setShowAddProductPopup}>
-                    <DialogContent className="w-[95%] sm:max-w-[500px] font-inter max-h-[calc(100vh-4rem)] overflow-y-auto p-4 sm:p-6 top-[15%] translate-y-0 bg-white rounded-lg shadow-lg"> {/* Changed shadow-none to shadow-lg */}
+                    <DialogContent className="w-[95%] sm:max-w-[500px] font-inter max-h-[calc(100vh-4rem)] overflow-y-auto p-4 sm:p-6 top-[15%] translate-y-0 bg-white rounded-lg shadow-lg">
                         <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold text-gray-900">Add New Product</DialogTitle>
+                            {/* MODIFIED: Added text-right to DialogTitle */}
+                            <DialogTitle className="text-2xl font-bold text-gray-900 text-right">Add New Product</DialogTitle>
                         </DialogHeader>
                         <AddProductForm
                             data={newProductData}
@@ -646,7 +634,7 @@ const HomePage = () => {
 
             {/* Add Product Success Dialog */}
             <Dialog open={showAddSuccessPopup} onOpenChange={setShowAddSuccessPopup}>
-                <DialogContent className="sm:max-w-[425px] font-inter max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg"> {/* Changed shadow-none to shadow-lg */}
+                <DialogContent className="sm:max-w-[425px] font-inter max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg">
                     <DialogHeader className="text-center">
                         <CheckCircle size={60} className="text-green-500 mx-auto mb-4 animate-bounce" />
                         <DialogTitle className="text-2xl font-bold text-gray-900">Product Added Successfully!</DialogTitle>
