@@ -71,7 +71,7 @@ const CartPage = () => {
           </div>
         ) : (
           // Cart Items Display - Main flex container for items and summary
-          <div className="flex flex-col lg:flex-row gap-8 flex-grow"> {/* Added flex-grow */}
+          <div className="flex flex-col lg:flex-row gap-8 flex-grow lg:items-start"> {/* Added lg:items-start here */}
             {/* Left Section: Cart Items List & Heading */}
             <div className="w-full lg:w-2/3 flex flex-col"> {/* Added flex flex-col */}
               
@@ -145,43 +145,40 @@ const CartPage = () => {
                 Order Summary
               </h2>
               <div className="space-y-4 mb-6">
-                <div className="flex justify-between text-gray-700 dark:text-gray-300 text-lg">
+                <div className="flex justify-between text-gray-700 dark:text-gray-300 text-lg sm:text-base"> {/* Adjusted font size for sm screens */}
                   <span>Subtotal ({totalItems} items):</span>
                   <span className="font-semibold">${totalPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-700 dark:text-gray-300 text-lg">
+                <div className="flex justify-between text-gray-700 dark:text-gray-300 text-lg sm:text-base"> {/* Adjusted font size for sm screens */}
                   <span>Shipping:</span>
                   <span className="font-semibold">${5.00.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-2xl font-bold text-gray-900 dark:text-white pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between text-2xl font-bold text-gray-900 dark:text-white pt-4 border-t border-gray-200 dark:border-gray-700 sm:text-xl"> {/* Adjusted font size for sm screens */}
                   <span>Total:</span>
                   <span>${(totalPrice + 5).toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="flex flex-col items-start gap-2">
-    <button
-        onClick={() => navigate("/checkout")}
-        // Removed rounded-md, added a fixed width (w-32 as an example).
-        className="inline-flex bg-blue-600 text-white font-semibold px-2 py-0.5 w-32 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-[15px] text-left"
-    >
-        Proceed to Checkout
-    </button>
-    <button
-        onClick={clearCart}
-        // Removed rounded-md, added a fixed width (w-32 as an example).
-        className="inline-flex bg-blue-600 text-white font-semibold px-2 py-0.5 w-32 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-[15px] text-left"
-    >
-        Clear Cart
-    </button>
-    <button
-        onClick={() => navigate("/")}
-        // Removed rounded-md, added a fixed width (w-32 as an example).
-        className="inline-flex bg-blue-600 text-white font-semibold px-2 py-0.5 w-32 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-[15px] text-left"
-    >
-        Continue Shopping
-    </button>
-</div>
+                <button
+                  onClick={() => navigate("/checkout")}
+                  className="bg-transparent text-blue-600 border border-blue-600 font-semibold px-4 py-2 rounded-full w-auto hover:bg-blue-600 hover:text-white transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-base text-left"
+                >
+                  Proceed to Checkout
+                </button>
+                <button
+                  onClick={clearCart}
+                  className="bg-transparent text-blue-600 border border-blue-600 font-semibold px-4 py-2 rounded-full w-auto hover:bg-blue-600 hover:text-white transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-base text-left"
+                >
+                  Clear Cart  Button
+                </button>
+                <button
+                  onClick={() => navigate("/")}
+                  className="bg-transparent text-blue-600 border border-blue-600 font-semibold px-4 py-2 rounded-full w-auto hover:bg-blue-600 hover:text-white transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-base text-left"
+                >
+                  Continue Shopping
+                </button>
+              </div>
             </div>
           </div>
         )}
