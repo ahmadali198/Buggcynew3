@@ -17,30 +17,17 @@ const CartPage = () => {
     e.target.src = `https://placehold.co/64x64/cccccc/333333?text=No+Image`;
   }, []);
 
-  // Calculate dynamic max-height for the scrollable cart items list
-  // This value needs careful tuning based on your actual header/footer heights
-  // and the height of the order summary.
-  // Let's assume a roughly fixed header height (e.g., 64px for a nav) + existing padding + heading height
-  // A safer approach might involve a ref to measure elements, but for Tailwind,
-  // we estimate.
-  // py-6 (24px top + 24px bottom) + h1 (text-3xl ~ 36px line-height + mb-4/6) + gap-8 (32px)
-  // Let's try to leave about 150-200px from the top, including padding.
-  const scrollableAreaPaddingTop = "pt-8"; // Reduced from py-10
-  const scrollableAreaPaddingBottom = "pb-8"; // Reduced from py-10
-
   return (
     // Main container: min-h-screen to ensure it takes full height.
-    // Use `pt-8 pb-8` for reduced top/bottom padding.
-    // `overflow-hidden` is now applied to `body` or a higher-level layout component if you want no browser scrollbar.
-    // If only cart items should scroll, keep `overflow-hidden` off here.
-    <div className={`min-h-screen bg-white ${scrollableAreaPaddingTop} ${scrollableAreaPaddingBottom} px-4 sm:px-6 lg:px-8 font-inter flex flex-col`}>
+    // Use `py-8` for reduced top/bottom padding.
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8 font-inter flex flex-col">
       <div className="max-w-screen-xl mx-auto flex flex-col gap-8 flex-grow">
         <h1 className="text-3xl font-extrabold text-center text-gray-900 dark:text-white mb-4 sm:mb-6">
           Your Shopping Cart ({totalItems} {totalItems === 1 ? 'Item' : 'Items'})
         </h1>
 
         {cartItems.length === 0 ? (
-          // Empty Cart State - adjusted shadow
+          // Empty Cart State
           <div className="flex flex-col items-center justify-center py-16 bg-white rounded-3xl shadow-xl px-4 text-center">
             <svg
               className="w-24 h-24 text-gray-400 dark:text-gray-600 mb-6"
@@ -71,14 +58,11 @@ const CartPage = () => {
           </div>
         ) : (
           // Cart Items Display - Main flex container for items and summary
-          <div className="flex flex-col lg:flex-row gap-8 flex-grow lg:items-start"> {/* Added lg:items-start here */}
-            {/* Left Section: Cart Items List & Heading */}
-            <div className="w-full lg:w-2/3 flex flex-col"> {/* Added flex flex-col */}
-              
+          <div className="flex flex-col lg:flex-row gap-8 flex-grow lg:items-start">
+            {/* Left Section: Cart Items List */}
+            <div className="w-full lg:w-2/3 flex flex-col">
               {/* Scrollable Cart Items List */}
-              {/* max-h-full ensures it tries to take all available space within its flex parent */}
-              {/* overflow-y-auto enables scrolling ONLY on this section */}
-              <div className="flex-grow space-y-4 pr-2 overflow-y-auto max-h-[calc(100vh - 280px)] lg:max-h-[calc(100vh - 200px)]"> {/* Adjusted max-h for responsiveness */}
+              <div className="flex-grow space-y-4 pr-2 overflow-y-auto max-h-[calc(100vh - 280px)] lg:max-h-[calc(100vh - 200px)]">
                 {cartItems.map((item) => (
                   <div
                     key={item.id}
@@ -136,47 +120,43 @@ const CartPage = () => {
                   </div>
                 ))}
               </div>
+              {/* Clear Cart Button below the cart items list */}
+              <div className="mt-4 text-left">
+                <button
+                  onClick={clearCart}
+                  className="inline-flex items-center text-blue-600 hover:underline hover:bg-blue-50 dark:hover:bg-blue-900 dark:text-blue-400 font-semibold text-base py-2 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                >
+                  Clear Cart
+                </button>
+              </div>
             </div>
 
             {/* Right Section: Order Summary */}
-            {/* flex-shrink-0 ensures it doesn't get squashed. On desktop, it will sit beside the scrollable items. */}
             <div className="w-full lg:w-1/3 bg-white rounded-2xl shadow-md p-6 border border-gray-200 dark:border-gray-700 flex-shrink-0">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5 border-b border-gray-200 dark:border-gray-700 pb-4">
                 Order Summary
               </h2>
               <div className="space-y-4 mb-6">
-                <div className="flex justify-between text-gray-700 dark:text-gray-300 text-lg sm:text-base"> {/* Adjusted font size for sm screens */}
+                <div className="flex justify-between text-gray-700 dark:text-gray-300 text-lg sm:text-base">
                   <span>Subtotal ({totalItems} items):</span>
                   <span className="font-semibold">${totalPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-700 dark:text-gray-300 text-lg sm:text-base"> {/* Adjusted font size for sm screens */}
+                <div className="flex justify-between text-gray-700 dark:text-gray-300 text-lg sm:text-base">
                   <span>Shipping:</span>
                   <span className="font-semibold">${5.00.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-2xl font-bold text-gray-900 dark:text-white pt-4 border-t border-gray-200 dark:border-gray-700 sm:text-xl"> {/* Adjusted font size for sm screens */}
+                <div className="flex justify-between text-2xl font-bold text-gray-900 dark:text-white pt-4 border-t border-gray-200 dark:border-gray-700 sm:text-xl">
                   <span>Total:</span>
                   <span>${(totalPrice + 5).toFixed(2)}</span>
                 </div>
               </div>
 
-              <div className="flex flex-col items-start gap-2">
+              <div className="flex flex-col items-center">
                 <button
                   onClick={() => navigate("/checkout")}
-                  className="bg-transparent text-blue-600 border border-blue-600 font-semibold px-4 py-2 rounded-full w-auto hover:bg-blue-600 hover:text-white transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-base text-left"
+                  className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-full w-full hover:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-lg shadow-lg"
                 >
                   Proceed to Checkout
-                </button>
-                <button
-                  onClick={clearCart}
-                  className="bg-transparent text-blue-600 border border-blue-600 font-semibold px-4 py-2 rounded-full w-auto hover:bg-blue-600 hover:text-white transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-base text-left"
-                >
-                  Clear Cart  Button
-                </button>
-                <button
-                  onClick={() => navigate("/")}
-                  className="bg-transparent text-blue-600 border border-blue-600 font-semibold px-4 py-2 rounded-full w-auto hover:bg-blue-600 hover:text-white transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-base text-left"
-                >
-                  Continue Shopping
                 </button>
               </div>
             </div>
@@ -188,3 +168,4 @@ const CartPage = () => {
 };
 
 export default React.memo(CartPage);
+
