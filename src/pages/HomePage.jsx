@@ -225,7 +225,7 @@ const HomePage = () => {
             // Replaced success dialog with toast notification
             toast.success('Product updated successfully!', {
                 duration: 3000,
-                position: 'top-center',
+                position: 'bottom-right',
                 iconTheme: { primary: '#10B981', secondary: '#fff' },
                 style: { minWidth: '250px' },
             });
@@ -273,7 +273,7 @@ const HomePage = () => {
             // Replaced success dialog with toast notification
             toast.success('Product deleted successfully!', {
                 duration: 3000,
-                position: 'top-center',
+                position: 'bottom-right',
                 iconTheme: { primary: '#10B981', secondary: '#fff' },
                 style: { minWidth: '250px' },
             });
@@ -622,3 +622,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
