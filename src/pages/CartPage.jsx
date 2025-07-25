@@ -21,7 +21,8 @@ const CartPage = () => {
     // Main container: min-h-screen to ensure it takes full height.
     // Use `py-8` for reduced top/bottom padding.
     <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8 font-inter flex flex-col">
-      <div className="max-w-screen-xl mx-auto flex flex-col gap-8 flex-grow">
+      {/* Increased max-w to give more overall space, mx-auto for centering */}
+      <div className="max-w-[1400px] mx-auto w-full flex flex-col gap-8 flex-grow"> {/* Adjusted max-w to provide more space */}
         <h1 className="text-3xl font-extrabold text-center text-gray-900 dark:text-white mb-4 sm:mb-6">
           Your Shopping Cart ({totalItems} {totalItems === 1 ? 'Item' : 'Items'})
         </h1>
@@ -59,8 +60,8 @@ const CartPage = () => {
         ) : (
           // Cart Items Display - Main flex container for items and summary
           <div className="flex flex-col lg:flex-row gap-8 flex-grow lg:items-start">
-            {/* Left Section: Cart Items List */}
-            <div className="w-full lg:w-2/3 flex flex-col">
+            {/* Left Section: Cart Items List - now takes 3/4 width on large screens and up */}
+            <div className="w-full lg:w-3/4 flex flex-col"> {/* Increased width to lg:w-3/4 */}
               {/* Scrollable Cart Items List */}
               <div className="flex-grow space-y-4 pr-2 overflow-y-auto max-h-[calc(100vh - 280px)] lg:max-h-[calc(100vh - 200px)]">
                 {cartItems.map((item) => (
@@ -72,10 +73,11 @@ const CartPage = () => {
                       <img
                         src={item.image}
                         alt={item.title}
-                        className="w-20 h-20 object-contain rounded-lg border border-gray-300 dark:border-gray-600 p-1 flex-shrink-0"
+                        className="w-20 h-20 object-contain rounded-lg p-1 flex-shrink-0" // Removed border classes
                         onError={handleImageError}
                       />
                       <div className="flex-grow">
+                        {/* Removed line-clamp-1 to allow full title display */}
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                           {item.title}
                         </h3>
@@ -86,7 +88,7 @@ const CartPage = () => {
                     </div>
 
                     <div className="flex items-center space-x-3 flex-shrink-0">
-                      {/* Decrease Quantity Button */}
+                      {/* Decrease Quantity Button - text-xl ensures good centering for the symbol */}
                       <button
                         onClick={() => decreaseQuantity(item.id)}
                         className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 w-7 h-7 flex items-center justify-center rounded-full text-xl font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -97,7 +99,7 @@ const CartPage = () => {
                       <span className="font-semibold text-lg text-gray-800 dark:text-gray-200 w-8 text-center">
                         {item.quantity}
                       </span>
-                      {/* Increase Quantity Button */}
+                      {/* Increase Quantity Button - text-xl ensures good centering for the symbol */}
                       <button
                         onClick={() => addToCart(item)}
                         className="bg-blue-500 dark:bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full text-xl font-bold hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -131,8 +133,8 @@ const CartPage = () => {
               </div>
             </div>
 
-            {/* Right Section: Order Summary */}
-            <div className="w-full lg:w-1/3 bg-white rounded-2xl shadow-md p-6 border border-gray-200 dark:border-gray-700 flex-shrink-0">
+            {/* Right Section: Order Summary - takes 1/4 width on large screens and up */}
+            <div className="w-full lg:w-1/4 bg-white rounded-2xl shadow-md p-6 border border-gray-200 dark:border-gray-700 flex-shrink-0">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5 border-b border-gray-200 dark:border-gray-700 pb-4">
                 Order Summary
               </h2>
@@ -154,9 +156,9 @@ const CartPage = () => {
               <div className="flex flex-col items-center">
                 <button
                   onClick={() => navigate("/checkout")}
-                  className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-full w-full hover:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-lg shadow-lg"
+                  className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-full w-full flex items-center justify-center hover:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-lg shadow-lg"
                 >
-                  Proceed to Checkout
+                  Checkout
                 </button>
               </div>
             </div>
@@ -168,4 +170,7 @@ const CartPage = () => {
 };
 
 export default React.memo(CartPage);
+
+
+
 
