@@ -63,10 +63,10 @@ const CheckoutPage = () => {
     return (
         <div className="min-h-screen bg-white py-10 px-4 sm:px-6 lg:px-8 font-inter flex justify-start items-start">
             {/* Increased max-w for overall larger form size, adjusted gap */}
-            <div className="max-w-5xl w-full bg-white shadow-none rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row gap-8 md:gap-12">
+            <div className="max-w-[1200px] w-full bg-white shadow-none rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row gap-8 md:gap-12">
 
-                {/* Left Column: Customer Details Form - now takes 4/5 width on medium screens and up */}
-                <div className="md:w-4/5 w-full space-y-6"> {/* Increased width to md:w-4/5 */}
+                {/* Left Column: Customer Details Form - now takes 2/3 width on medium screens and up */}
+                <div className="md:w-2/3 w-full space-y-6"> {/* Adjusted width to md:w-2/3 */}
                     <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-3 border-b pb-4 border-gray-100 dark:border-gray-700">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-blue-600 dark:text-blue-400">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 1114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -90,6 +90,12 @@ const CheckoutPage = () => {
                                 <input type="email" id="email" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-none bg-white text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="john.doe@example.com" required />
                             </div>
                         </div>
+                        <div>
+                            {/* Label text size remains text-lg */}
+                            <label htmlFor="address" className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-1 text-left">Shipping Address</label>
+                            {/* Increased input vertical padding to py-3 */}
+                            <input type="text" id="address" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-none bg-white text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="123 Main St" required />
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 {/* Label text size remains text-lg */}
@@ -104,18 +110,11 @@ const CheckoutPage = () => {
                                 <input type="text" id="zipCode" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-none bg-white text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="10001" required />
                             </div>
                         </div>
-                        <div>
-                            {/* Label text size remains text-lg */}
-                            <label htmlFor="address" className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-1 text-left">Shipping Address</label>
-                            {/* Increased input vertical padding to py-3 */}
-                            <input type="text" id="address" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-none bg-white text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left transition-colors" placeholder="123 Main St" required />
-                        </div>
-                       
                     </form>
                 </div>
 
-                {/* Right Column: Order Summary Section - now takes 1/5 width on medium screens and up */}
-                <div className="md:w-1/5 w-full space-y-6 text-gray-800 dark:text-gray-200"> {/* Decreased width to md:w-1/5 */}
+                {/* Right Column: Order Summary Section - now takes 1/3 width on medium screens and up */}
+                <div className="md:w-1/3 w-full space-y-6 text-gray-800 dark:text-gray-200"> {/* Adjusted width to md:w-1/3 */}
                     <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 flex items-center space-x-3 border-b pb-4 border-gray-100 dark:border-gray-700">
                         <ShoppingCart size={28} className="text-blue-600 dark:text-blue-400" />
                         <span>Order Summary</span>
@@ -188,10 +187,10 @@ const CheckoutPage = () => {
                             <span>${finalTotal.toFixed(2)}</span>
                         </div>
                     </div>
-                    {/* Place Order button: full width, left-aligned text, now with solid green background */}
+                    {/* Place Order button: full width, center-aligned text, with solid green background */}
                     <button
                         onClick={handlePlaceOrder}
-                        className="w-full flex items-center justify-start gap-2 text-base font-semibold py-2.5 px-6 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50
+                        className="w-full flex items-center justify-center gap-2 text-base font-semibold py-2.5 px-6 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50
                                    bg-green-600 text-white border border-green-700 shadow-md
                                    hover:bg-green-700 transform hover:-translate-y-0.5 hover:scale-105"
                         disabled={isProcessing}
@@ -241,3 +240,4 @@ const CheckoutPage = () => {
 };
 
 export default React.memo(CheckoutPage);
+
